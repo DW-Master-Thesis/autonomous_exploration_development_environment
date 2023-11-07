@@ -2,9 +2,8 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource, FrontendLaunchDescriptionSource
-from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration 
 
 def generate_launch_description():
@@ -16,11 +15,11 @@ def generate_launch_description():
   vehicleZ = LaunchConfiguration('vehicleZ')
   terrainZ = LaunchConfiguration('terrainZ')
   vehicleYaw = LaunchConfiguration('vehicleYaw')
-  gazebo_gui = LaunchConfiguration('gazebo_gui')
   gazebo_timeout = LaunchConfiguration('gazebo_timeout')
   checkTerrainConn = LaunchConfiguration('checkTerrainConn')
+  gazebo_gui = LaunchConfiguration('gazebo_gui')
   
-  declare_world_name = DeclareLaunchArgument('world_name', default_value='indoor', description='')
+  declare_world_name = DeclareLaunchArgument('world_name', default_value="indoor", description='')
   declare_vehicleHeight = DeclareLaunchArgument('vehicleHeight', default_value='0.75', description='')
   declare_cameraOffsetZ = DeclareLaunchArgument('cameraOffsetZ', default_value='0.0', description='')
   declare_vehicleX = DeclareLaunchArgument('vehicleX', default_value='0.0', description='')
@@ -28,81 +27,44 @@ def generate_launch_description():
   declare_vehicleZ = DeclareLaunchArgument('vehicleZ', default_value='0.0', description='')
   declare_terrainZ = DeclareLaunchArgument('terrainZ', default_value='0.0', description='')
   declare_vehicleYaw = DeclareLaunchArgument('vehicleYaw', default_value='0.0', description='')
-  declare_gazebo_gui = DeclareLaunchArgument('gazebo_gui', default_value='false', description='')
   declare_gazebo_timeout = DeclareLaunchArgument('gazebo_timeout', default_value='60.0', description='')
   declare_checkTerrainConn = DeclareLaunchArgument('checkTerrainConn', default_value='false', description='')
-  
-  start_local_planner = IncludeLaunchDescription(
-    FrontendLaunchDescriptionSource(os.path.join(
-      get_package_share_directory('local_planner'), 'launch', 'local_planner.launch')
-    ),
-    launch_arguments={
-      'cameraOffsetZ': cameraOffsetZ,
-      'goalX': vehicleX,
-      'goalY': vehicleY,
-    }.items()
-  )
+  declare_gazebo_gui = DeclareLaunchArgument('gazebo_gui', default_value='false', description='')
 
-  start_terrain_analysis = IncludeLaunchDescription(
-    FrontendLaunchDescriptionSource(os.path.join(
-      get_package_share_directory('terrain_analysis'), 'launch', 'terrain_analysis.launch')
-    )
-  )
-
-  start_terrain_analysis_ext = IncludeLaunchDescription(
-    FrontendLaunchDescriptionSource(os.path.join(
-      get_package_share_directory('terrain_analysis_ext'), 'launch', 'terrain_analysis_ext.launch')
-    ),
-    launch_arguments={
-      'checkTerrainConn': checkTerrainConn,
-    }.items()
-  )
-
-  start_vehicle_simulator = IncludeLaunchDescription(
+  start_gazebo = IncludeLaunchDescription(
     PythonLaunchDescriptionSource(os.path.join(
-      get_package_share_directory('vehicle_simulator'), 'launch', 'vehicle_simulator.launch.py')
+      get_package_share_directory('vehicle_simulator'), 'launch', 'gazebo.launch.py')
     ),
     launch_arguments={
       'world_name': world_name,
+      'gui': gazebo_gui,
+    }.items()
+  )
+
+  start_single_vehicle_system = IncludeLaunchDescription(
+    PythonLaunchDescriptionSource(os.path.join(
+      get_package_share_directory('vehicle_simulator'), 'launch', 'vehicle_system.launch.py')
+    ),
+    launch_arguments={
       'vehicleHeight': vehicleHeight,
       'cameraOffsetZ': cameraOffsetZ,
       'vehicleX': vehicleX,
       'vehicleY': vehicleY,
+      'vehicleZ': vehicleZ,
       'terrainZ': terrainZ,
       'vehicleYaw': vehicleYaw,
-      'gui': gazebo_gui,
       'gazebo_timeout': gazebo_timeout,
+      'checkTerrainConn': checkTerrainConn,
     }.items()
   )
 
-  start_sensor_scan_generation = IncludeLaunchDescription(
-    FrontendLaunchDescriptionSource(os.path.join(
-      get_package_share_directory('sensor_scan_generation'), 'launch', 'sensor_scan_generation.launch')
-    )
-  )
-
-  start_visualization_tools = IncludeLaunchDescription(
-    FrontendLaunchDescriptionSource(os.path.join(
-      get_package_share_directory('visualization_tools'), 'launch', 'visualization_tools.launch')
+  start_visualization = IncludeLaunchDescription(
+    PythonLaunchDescriptionSource(os.path.join(
+      get_package_share_directory('vehicle_simulator'), 'launch', 'visualization.launch.py')
     ),
     launch_arguments={
       'world_name': world_name,
     }.items()
-  )
-
-  rviz_config_file = os.path.join(get_package_share_directory('vehicle_simulator'), 'rviz', 'vehicle_simulator.rviz')
-  start_rviz = Node(
-    package='rviz2',
-    executable='rviz2',
-    arguments=['-d', rviz_config_file],
-    output='screen'
-  )
-
-  delayed_start_rviz = TimerAction(
-    period=8.0,
-    actions=[
-      start_rviz
-    ]
   )
 
   ld = LaunchDescription()
@@ -116,16 +78,12 @@ def generate_launch_description():
   ld.add_action(declare_vehicleZ)
   ld.add_action(declare_terrainZ)
   ld.add_action(declare_vehicleYaw)
-  ld.add_action(declare_gazebo_gui)
   ld.add_action(declare_gazebo_timeout)
   ld.add_action(declare_checkTerrainConn)
+  ld.add_action(declare_gazebo_gui)
 
-  ld.add_action(start_local_planner)
-  ld.add_action(start_terrain_analysis)
-  ld.add_action(start_terrain_analysis_ext)
-  ld.add_action(start_vehicle_simulator)
-  ld.add_action(start_sensor_scan_generation)
-  ld.add_action(start_visualization_tools)
-  ld.add_action(delayed_start_rviz)
+  ld.add_action(start_single_vehicle_system)
+  ld.add_action(start_gazebo)
+  ld.add_action(start_visualization)
 
   return ld

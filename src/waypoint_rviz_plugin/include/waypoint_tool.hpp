@@ -8,7 +8,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/qos.hpp>
 
-#include <sensor_msgs/msg/joy.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <rviz_default_plugins/tools/pose/pose_tool.hpp>
@@ -50,7 +49,6 @@ private:
   float vehicle_z;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_;
   rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr pub_;
-  rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr pub_joy_;
   
   rclcpp::Clock::SharedPtr clock_;
   

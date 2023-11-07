@@ -11,7 +11,6 @@
 
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
-#include <sensor_msgs/msg/joy.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
 
@@ -157,15 +156,6 @@ void terrainCloudLocalHandler(const sensor_msgs::msg::PointCloud2::ConstSharedPt
   pcl::fromROSMsg(*terrainCloudLocal2, *terrainCloudLocal);
 }
 
-// joystick callback function
-void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
-{
-  if (joy->buttons[5] > 0.5)
-  {
-    clearingCloud = true;
-  }
-}
-
 // cloud clearing callback function
 void clearingHandler(const std_msgs::msg::Float32::ConstSharedPtr dis)
 {
@@ -217,8 +207,6 @@ int main(int argc, char** argv)
   auto subOdometry = nh->create_subscription<nav_msgs::msg::Odometry>("/state_estimation", 5, odometryHandler);
 
   auto subLaserCloud = nh->create_subscription<sensor_msgs::msg::PointCloud2>("/registered_scan", 5, laserCloudHandler);
-
-  auto subJoystick = nh->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joystickHandler);
 
   auto subClearing = nh->create_subscription<std_msgs::msg::Float32>("/cloud_clearing", 5, clearingHandler);
 

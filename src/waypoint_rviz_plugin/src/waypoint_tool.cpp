@@ -40,7 +40,6 @@ void WaypointTool::updateTopic()
   sub_ = raw_node->template create_subscription<nav_msgs::msg::Odometry>("/state_estimation", 5 ,std::bind(&WaypointTool::odomHandler,this,std::placeholders::_1));
   
   pub_ = raw_node->template create_publisher<geometry_msgs::msg::PointStamped>("/way_point", qos_profile_);
-  pub_joy_ = raw_node->template create_publisher<sensor_msgs::msg::Joy>("/joy", qos_profile_);
   clock_ = raw_node->get_clock();
 }
 
@@ -51,36 +50,9 @@ void WaypointTool::odomHandler(const nav_msgs::msg::Odometry::ConstSharedPtr odo
 
 void WaypointTool::onPoseSet(double x, double y, double theta)
 {
-  sensor_msgs::msg::Joy joy;
-
-  joy.axes.push_back(0);
-  joy.axes.push_back(0);
-  joy.axes.push_back(-1.0);
-  joy.axes.push_back(0);
-  joy.axes.push_back(1.0);
-  joy.axes.push_back(1.0);
-  joy.axes.push_back(0);
-  joy.axes.push_back(0);
-
-  joy.buttons.push_back(0);
-  joy.buttons.push_back(0);
-  joy.buttons.push_back(0);
-  joy.buttons.push_back(0);
-  joy.buttons.push_back(0);
-  joy.buttons.push_back(0);
-  joy.buttons.push_back(0);
-  joy.buttons.push_back(1);
-  joy.buttons.push_back(0);
-  joy.buttons.push_back(0);
-  joy.buttons.push_back(0);
-
-  joy.header.stamp = clock_->now();
-  joy.header.frame_id = "waypoint_tool";
-  pub_joy_->publish(joy);
-
   geometry_msgs::msg::PointStamped waypoint;
   waypoint.header.frame_id = "map";
-  waypoint.header.stamp = joy.header.stamp;
+  waypoint.header.stamp = clock_->now();
   waypoint.point.x = x;
   waypoint.point.y = y;
   waypoint.point.z = vehicle_z;

@@ -10,7 +10,6 @@
 
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
-#include <sensor_msgs/msg/joy.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
 #include <std_msgs/msg/int8.hpp>
@@ -66,11 +65,8 @@ bool noRotAtStop = false;
 bool noRotAtGoal = true;
 bool autonomyMode = false;
 double autonomySpeed = 1.0;
-double joyToSpeedDelay = 2.0;
 
-float joySpeed = 0;
-float joySpeedRaw = 0;
-float joyYaw = 0;
+float speedRatio = 0;
 int safetyStop = 0;
 
 float vehicleX = 0;
@@ -91,7 +87,6 @@ float vehicleYawRate = 0;
 float vehicleSpeed = 0;
 
 double odomTime = 0;
-double joyTime = 0;
 double slowInitTime = 0;
 double stopInitTime = false;
 int pathPointID = 0;
@@ -146,36 +141,13 @@ void pathHandler(const nav_msgs::msg::Path::ConstSharedPtr pathIn)
   pathInit = true;
 }
 
-void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
-{
-  joyTime = nh->now().seconds(); 
-  joySpeedRaw = sqrt(joy->axes[3] * joy->axes[3] + joy->axes[4] * joy->axes[4]);
-  joySpeed = joySpeedRaw;
-  if (joySpeed > 1.0) joySpeed = 1.0;
-  if (joy->axes[4] == 0) joySpeed = 0;
-  joyYaw = joy->axes[3];
-  if (joySpeed == 0 && noRotAtStop) joyYaw = 0;
-
-  if (joy->axes[4] < 0 && !twoWayDrive) {
-    joySpeed = 0;
-    joyYaw = 0;
-  }
-
-  if (joy->axes[2] > -0.1) {
-    autonomyMode = false;
-  } else {
-    autonomyMode = true;
-  }
-}
-
 void speedHandler(const std_msgs::msg::Float32::ConstSharedPtr speed)
 {
-  double speedTime = nh->now().seconds();
-  if (autonomyMode && speedTime - joyTime > joyToSpeedDelay && joySpeedRaw == 0) {
-    joySpeed = speed->data / maxSpeed;
+  if (autonomyMode) {
+    speedRatio = speed->data / maxSpeed;
 
-    if (joySpeed < 0) joySpeed = 0;
-    else if (joySpeed > 1.0) joySpeed = 1.0;
+    if (speedRatio < 0) speedRatio = 0;
+    else if (speedRatio > 1.0) speedRatio = 1.0;
   }
 }
 
@@ -216,7 +188,6 @@ int main(int argc, char** argv)
   nh->declare_parameter<bool>("noRotAtGoal", noRotAtGoal);
   nh->declare_parameter<bool>("autonomyMode", autonomyMode);
   nh->declare_parameter<double>("autonomySpeed", autonomySpeed);
-  nh->declare_parameter<double>("joyToSpeedDelay", joyToSpeedDelay);
 
   nh->get_parameter("sensorOffsetX", sensorOffsetX);
   nh->get_parameter("sensorOffsetY", sensorOffsetY);
@@ -245,13 +216,10 @@ int main(int argc, char** argv)
   nh->get_parameter("noRotAtGoal", noRotAtGoal);
   nh->get_parameter("autonomyMode", autonomyMode);
   nh->get_parameter("autonomySpeed", autonomySpeed);
-  nh->get_parameter("joyToSpeedDelay", joyToSpeedDelay);
 
   auto subOdom = nh->create_subscription<nav_msgs::msg::Odometry>("/state_estimation", 5, odomHandler);
 
   auto subPath = nh->create_subscription<nav_msgs::msg::Path>("/path", 5, pathHandler);
-
-  auto subJoystick = nh->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joystickHandler);
 
   auto subSpeed = nh->create_subscription<std_msgs::msg::Float32>("/speed", 5, speedHandler);
 
@@ -263,10 +231,10 @@ int main(int argc, char** argv)
   cmd_vel.header.frame_id = "vehicle";
 
   if (autonomyMode) {
-    joySpeed = autonomySpeed / maxSpeed;
+    speedRatio = autonomySpeed / maxSpeed;
 
-    if (joySpeed < 0) joySpeed = 0;
-    else if (joySpeed > 1.0) joySpeed = 1.0;
+    if (speedRatio < 0) speedRatio = 0;
+    else if (speedRatio > 1.0) speedRatio = 1.0;
   }
 
   rclcpp::Rate rate(100);
@@ -319,11 +287,11 @@ int main(int argc, char** argv)
         }
       }
 
-      float joySpeed2 = maxSpeed * joySpeed;
+      float desiredSpeed = maxSpeed * speedRatio;
       if (!navFwd) {
         dirDiff += PI;
         if (dirDiff > PI) dirDiff -= 2 * PI;
-        joySpeed2 *= -1;
+        desiredSpeed *= -1;
       }
 
       if (fabs(vehicleSpeed) < 2.0 * maxAccel / 100.0) vehicleYawRate = -stopYawRateGain * dirDiff;
@@ -332,25 +300,24 @@ int main(int argc, char** argv)
       if (vehicleYawRate > maxYawRate * PI / 180.0) vehicleYawRate = maxYawRate * PI / 180.0;
       else if (vehicleYawRate < -maxYawRate * PI / 180.0) vehicleYawRate = -maxYawRate * PI / 180.0;
 
-      if (joySpeed2 == 0 && !autonomyMode) {
-        vehicleYawRate = maxYawRate * joyYaw * PI / 180.0;
+      if (desiredSpeed == 0 && !autonomyMode) {
+        vehicleYawRate = maxYawRate * PI / 180.0;
       } else if (pathSize <= 1 || (dis < stopDisThre && noRotAtGoal)) {
         vehicleYawRate = 0;
       }
 
       if (pathSize <= 1) {
-        joySpeed2 = 0;
-      } else if (endDis / slowDwnDisThre < joySpeed) {
-        joySpeed2 *= endDis / slowDwnDisThre;
+        desiredSpeed = 0;
+      } else if (endDis / slowDwnDisThre < speedRatio) {
+        desiredSpeed *= endDis / slowDwnDisThre;
       }
 
-      float joySpeed3 = joySpeed2;
-      if (odomTime < slowInitTime + slowTime1 && slowInitTime > 0) joySpeed3 *= slowRate1;
-      else if (odomTime < slowInitTime + slowTime1 + slowTime2 && slowInitTime > 0) joySpeed3 *= slowRate2;
+      if (odomTime < slowInitTime + slowTime1 && slowInitTime > 0) desiredSpeed *= slowRate1;
+      else if (odomTime < slowInitTime + slowTime1 + slowTime2 && slowInitTime > 0) desiredSpeed *= slowRate2;
 
       if (fabs(dirDiff) < dirDiffThre && dis > stopDisThre) {
-        if (vehicleSpeed < joySpeed3) vehicleSpeed += maxAccel / 100.0;
-        else if (vehicleSpeed > joySpeed3) vehicleSpeed -= maxAccel / 100.0;
+        if (vehicleSpeed < desiredSpeed) vehicleSpeed += maxAccel / 100.0;
+        else if (vehicleSpeed > desiredSpeed) vehicleSpeed -= maxAccel / 100.0;
       } else {
         if (vehicleSpeed > 0) vehicleSpeed -= maxAccel / 100.0;
         else if (vehicleSpeed < 0) vehicleSpeed += maxAccel / 100.0;

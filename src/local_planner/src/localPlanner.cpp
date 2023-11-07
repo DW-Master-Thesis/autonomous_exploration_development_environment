@@ -11,7 +11,6 @@
 
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
-#include <sensor_msgs/msg/joy.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <nav_msgs/msg/path.hpp>
@@ -79,15 +78,12 @@ bool pathRangeBySpeed = true;
 bool pathCropByGoal = true;
 bool autonomyMode = false;
 double autonomySpeed = 1.0;
-double joyToSpeedDelay = 2.0;
-double joyToCheckObstacleDelay = 5.0;
 double goalClearRange = 0.5;
 double goalX = 0;
 double goalY = 0;
 
-float joySpeed = 0;
-float joySpeedRaw = 0;
-float joyDir = 0;
+float speedRatio = 0;
+float dirRatio = 0;
 
 const int pathNum = 343;
 const int groupNum = 7;
@@ -127,7 +123,6 @@ bool newLaserCloud = false;
 bool newTerrainCloud = false;
 
 double odomTime = 0;
-double joyTime = 0;
 
 float vehicleRoll = 0, vehiclePitch = 0, vehicleYaw = 0;
 float vehicleX = 0, vehicleY = 0, vehicleZ = 0;
@@ -216,34 +211,6 @@ void terrainCloudHandler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr ter
   }
 }
 
-void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
-{
-  joyTime = nh->now().seconds();
-  joySpeedRaw = sqrt(joy->axes[3] * joy->axes[3] + joy->axes[4] * joy->axes[4]);
-  joySpeed = joySpeedRaw;
-  if (joySpeed > 1.0) joySpeed = 1.0;
-  if (joy->axes[4] == 0) joySpeed = 0;
-
-  if (joySpeed > 0) {
-    joyDir = atan2(joy->axes[3], joy->axes[4]) * 180 / PI;
-    if (joy->axes[4] < 0) joyDir *= -1;
-  }
-
-  if (joy->axes[4] < 0 && !twoWayDrive) joySpeed = 0;
-
-  if (joy->axes[2] > -0.1) {
-    autonomyMode = false;
-  } else {
-    autonomyMode = true;
-  }
-
-  if (joy->axes[5] > -0.1) {
-    checkObstacle = true;
-  } else {
-    checkObstacle = false;
-  }
-}
-
 void goalHandler(const geometry_msgs::msg::PointStamped::ConstSharedPtr goal)
 {
   goalX = goal->point.x;
@@ -252,12 +219,11 @@ void goalHandler(const geometry_msgs::msg::PointStamped::ConstSharedPtr goal)
 
 void speedHandler(const std_msgs::msg::Float32::ConstSharedPtr speed)
 {
-  double speedTime = nh->now().seconds();
-  if (autonomyMode && speedTime - joyTime > joyToSpeedDelay && joySpeedRaw == 0) {
-    joySpeed = speed->data / maxSpeed;
+  if (autonomyMode) {
+    speedRatio = speed->data / maxSpeed;
 
-    if (joySpeed < 0) joySpeed = 0;
-    else if (joySpeed > 1.0) joySpeed = 1.0;
+    if (speedRatio < 0) speedRatio = 0;
+    else if (speedRatio > 1.0) speedRatio = 1.0;
   }
 }
 
@@ -313,8 +279,7 @@ void addedObstaclesHandler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr a
 
 void checkObstacleHandler(const std_msgs::msg::Bool::ConstSharedPtr checkObs)
 {
-  double checkObsTime = nh->now().seconds();
-  if (autonomyMode && checkObsTime - joyTime > joyToCheckObstacleDelay) {
+  if (autonomyMode) {
     checkObstacle = checkObs->data;
   }
 }
@@ -536,8 +501,6 @@ int main(int argc, char** argv)
   nh->declare_parameter<bool>("pathCropByGoal", pathCropByGoal);
   nh->declare_parameter<bool>("autonomyMode", autonomyMode);
   nh->declare_parameter<double>("autonomySpeed", autonomySpeed);
-  nh->declare_parameter<double>("joyToSpeedDelay", joyToSpeedDelay);
-  nh->declare_parameter<double>("joyToCheckObstacleDelay", joyToCheckObstacleDelay);
   nh->declare_parameter<double>("goalClearRange", goalClearRange);
   nh->declare_parameter<double>("goalX", goalX);
   nh->declare_parameter<double>("goalY", goalY);
@@ -576,8 +539,6 @@ int main(int argc, char** argv)
   nh->get_parameter("pathCropByGoal", pathCropByGoal);
   nh->get_parameter("autonomyMode", autonomyMode);
   nh->get_parameter("autonomySpeed", autonomySpeed);
-  nh->get_parameter("joyToSpeedDelay", joyToSpeedDelay);
-  nh->get_parameter("joyToCheckObstacleDelay", joyToCheckObstacleDelay);
   nh->get_parameter("goalClearRange", goalClearRange);
   nh->get_parameter("goalX", goalX);
   nh->get_parameter("goalY", goalY);
@@ -587,8 +548,6 @@ int main(int argc, char** argv)
   auto subLaserCloud = nh->create_subscription<sensor_msgs::msg::PointCloud2>("/registered_scan", 5, laserCloudHandler);
 
   auto subTerrainCloud = nh->create_subscription<sensor_msgs::msg::PointCloud2>("/terrain_map", 5, terrainCloudHandler);
-
-  auto subJoystick = nh->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joystickHandler);
 
   auto subGoal = nh->create_subscription<geometry_msgs::msg::PointStamped> ("/way_point", 5, goalHandler);
 
@@ -612,10 +571,10 @@ int main(int argc, char** argv)
   RCLCPP_INFO(nh->get_logger(), "Reading path files.");
 
   if (autonomyMode) {
-    joySpeed = autonomySpeed / maxSpeed;
+    speedRatio = autonomySpeed / maxSpeed;
 
-    if (joySpeed < 0) joySpeed = 0;
-    else if (joySpeed > 1.0) joySpeed = 1.0;
+    if (speedRatio < 0) speedRatio = 0;
+    else if (speedRatio > 1.0) speedRatio = 1.0;
   }
 
   for (int i = 0; i < laserCloudStackNum; i++) {
@@ -724,7 +683,7 @@ int main(int argc, char** argv)
       }
 
       float pathRange = adjacentRange;
-      if (pathRangeBySpeed) pathRange = adjacentRange * joySpeed;
+      if (pathRangeBySpeed) pathRange = adjacentRange * speedRatio;
       if (pathRange < minPathRange) pathRange = minPathRange;
       float relativeGoalDis = adjacentRange;
 
@@ -733,17 +692,17 @@ int main(int argc, char** argv)
         float relativeGoalY = (-(goalX - vehicleX) * sinVehicleYaw + (goalY - vehicleY) * cosVehicleYaw);
 
         relativeGoalDis = sqrt(relativeGoalX * relativeGoalX + relativeGoalY * relativeGoalY);
-        joyDir = atan2(relativeGoalY, relativeGoalX) * 180 / PI;
+        dirRatio = atan2(relativeGoalY, relativeGoalX) * 180 / PI;
 
         if (!twoWayDrive) {
-          if (joyDir > 90.0) joyDir = 90.0;
-          else if (joyDir < -90.0) joyDir = -90.0;
+          if (dirRatio > 90.0) dirRatio = 90.0;
+          else if (dirRatio < -90.0) dirRatio = -90.0;
         }
       }
 
       bool pathFound = false;
       float defPathScale = pathScale;
-      if (pathScaleBySpeed) pathScale = defPathScale * joySpeed;
+      if (pathScaleBySpeed) pathScale = defPathScale * speedRatio;
       if (pathScale < minPathScale) pathScale = minPathScale;
 
       while (pathScale >= minPathScale && pathRange >= minPathRange) {
@@ -769,12 +728,12 @@ int main(int argc, char** argv)
           if (dis < pathRange / pathScale && (dis <= (relativeGoalDis + goalClearRange) / pathScale || !pathCropByGoal) && checkObstacle) {
             for (int rotDir = 0; rotDir < 36; rotDir++) {
               float rotAng = (10.0 * rotDir - 180.0) * PI / 180;
-              float angDiff = fabs(joyDir - (10.0 * rotDir - 180.0));
+              float angDiff = fabs(dirRatio - (10.0 * rotDir - 180.0));
               if (angDiff > 180.0) {
                 angDiff = 360.0 - angDiff;
               }
-              if ((angDiff > dirThre && !dirToVehicle) || (fabs(10.0 * rotDir - 180.0) > dirThre && fabs(joyDir) <= 90.0 && dirToVehicle) ||
-                  ((10.0 * rotDir > dirThre && 360.0 - 10.0 * rotDir > dirThre) && fabs(joyDir) > 90.0 && dirToVehicle)) {
+              if ((angDiff > dirThre && !dirToVehicle) || (fabs(10.0 * rotDir - 180.0) > dirThre && fabs(dirRatio) <= 90.0 && dirToVehicle) ||
+                  ((10.0 * rotDir > dirThre && 360.0 - 10.0 * rotDir > dirThre) && fabs(dirRatio) > 90.0 && dirToVehicle)) {
                 continue;
               }
 
@@ -820,12 +779,12 @@ int main(int argc, char** argv)
 
         for (int i = 0; i < 36 * pathNum; i++) {
           int rotDir = int(i / pathNum);
-          float angDiff = fabs(joyDir - (10.0 * rotDir - 180.0));
+          float angDiff = fabs(dirRatio - (10.0 * rotDir - 180.0));
           if (angDiff > 180.0) {
             angDiff = 360.0 - angDiff;
           }
-          if ((angDiff > dirThre && !dirToVehicle) || (fabs(10.0 * rotDir - 180.0) > dirThre && fabs(joyDir) <= 90.0 && dirToVehicle) ||
-              ((10.0 * rotDir > dirThre && 360.0 - 10.0 * rotDir > dirThre) && fabs(joyDir) > 90.0 && dirToVehicle)) {
+          if ((angDiff > dirThre && !dirToVehicle) || (fabs(10.0 * rotDir - 180.0) > dirThre && fabs(dirRatio) <= 90.0 && dirToVehicle) ||
+              ((10.0 * rotDir > dirThre && 360.0 - 10.0 * rotDir > dirThre) && fabs(dirRatio) > 90.0 && dirToVehicle)) {
             continue;
           }
 
@@ -833,7 +792,7 @@ int main(int argc, char** argv)
             float penaltyScore = 1.0 - pathPenaltyList[i] / costHeightThre;
             if (penaltyScore < costScore) penaltyScore = costScore;
 
-            float dirDiff = fabs(joyDir - endDirPathList[i % pathNum] - (10.0 * rotDir - 180.0));
+            float dirDiff = fabs(dirRatio - endDirPathList[i % pathNum] - (10.0 * rotDir - 180.0));
             if (dirDiff > 360.0) {
               dirDiff -= 360.0;
             }
@@ -899,12 +858,12 @@ int main(int argc, char** argv)
             float rotAng = (10.0 * rotDir - 180.0) * PI / 180;
             float rotDeg = 10.0 * rotDir;
             if (rotDeg > 180.0) rotDeg -= 360.0;
-            float angDiff = fabs(joyDir - (10.0 * rotDir - 180.0));
+            float angDiff = fabs(dirRatio - (10.0 * rotDir - 180.0));
             if (angDiff > 180.0) {
               angDiff = 360.0 - angDiff;
             }
-            if ((angDiff > dirThre && !dirToVehicle) || (fabs(10.0 * rotDir - 180.0) > dirThre && fabs(joyDir) <= 90.0 && dirToVehicle) ||
-                ((10.0 * rotDir > dirThre && 360.0 - 10.0 * rotDir > dirThre) && fabs(joyDir) > 90.0 && dirToVehicle) || 
+            if ((angDiff > dirThre && !dirToVehicle) || (fabs(10.0 * rotDir - 180.0) > dirThre && fabs(dirRatio) <= 90.0 && dirToVehicle) ||
+                ((10.0 * rotDir > dirThre && 360.0 - 10.0 * rotDir > dirThre) && fabs(dirRatio) > 90.0 && dirToVehicle) || 
                 !((rotAng * 180.0 / PI > minObsAngCW && rotAng * 180.0 / PI < minObsAngCCW) || 
                 (rotDeg > minObsAngCW && rotDeg < minObsAngCCW && twoWayDrive) || !checkRotObstacle)) {
               continue;

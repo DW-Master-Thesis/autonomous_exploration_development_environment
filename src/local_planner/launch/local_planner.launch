@@ -7,7 +7,6 @@
   <arg name="maxSpeed" default="2.0"/>
   <arg name="autonomyMode" default="true"/>
   <arg name="autonomySpeed" default="2.0"/>
-  <arg name="joyToSpeedDelay" default="2.0"/>
   <arg name="goalX" default="0.0"/>
   <arg name="goalY" default="0.0"/>
 
@@ -46,8 +45,6 @@
     <param name="pathCropByGoal" value="true" />
     <param name="autonomyMode" value="$(var autonomyMode)" />
     <param name="autonomySpeed" value="$(var autonomySpeed)" />
-    <param name="joyToSpeedDelay" value="$(var joyToSpeedDelay)" />
-    <param name="joyToCheckObstacleDelay" value="5.0" />
     <param name="goalClearRange" value="0.5" />
     <param name="goalX" value="$(var goalX)" />
     <param name="goalY" value="$(var goalY)" />
@@ -81,7 +78,6 @@
     <param name="noRotAtGoal" value="true" />
     <param name="autonomyMode" value="$(var autonomyMode)" />
     <param name="autonomySpeed" value="$(var autonomySpeed)" />
-    <param name="joyToSpeedDelay" value="$(var joyToSpeedDelay)" />
   </node>
 
   <node pkg="tf2_ros" exec="static_transform_publisher" name="vehicleTransPublisher" args="-$(var sensorOffsetX) -$(var sensorOffsetY) 0 0 0 0 /sensor /vehicle"/>
