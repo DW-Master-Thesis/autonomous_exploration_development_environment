@@ -17,6 +17,7 @@ def generate_launch_description():
   terrainZ = LaunchConfiguration('terrainZ')
   vehicleYaw = LaunchConfiguration('vehicleYaw')
   gazebo_gui = LaunchConfiguration('gazebo_gui')
+  gazebo_timeout = LaunchConfiguration('gazebo_timeout')
   checkTerrainConn = LaunchConfiguration('checkTerrainConn')
   
   declare_world_name = DeclareLaunchArgument('world_name', default_value='forest', description='')
@@ -28,6 +29,7 @@ def generate_launch_description():
   declare_terrainZ = DeclareLaunchArgument('terrainZ', default_value='0.0', description='')
   declare_vehicleYaw = DeclareLaunchArgument('vehicleYaw', default_value='0.0', description='')
   declare_gazebo_gui = DeclareLaunchArgument('gazebo_gui', default_value='false', description='')
+  declare_gazebo_timeout = DeclareLaunchArgument('gazebo_timeout', default_value='60.0', description='')
   declare_checkTerrainConn = DeclareLaunchArgument('checkTerrainConn', default_value='true', description='')
   
   start_local_planner = IncludeLaunchDescription(
@@ -69,6 +71,7 @@ def generate_launch_description():
       'terrainZ': terrainZ,
       'vehicleYaw': vehicleYaw,
       'gui': gazebo_gui,
+      'gazebo_timeout': gazebo_timeout,
     }.items()
   )
 
@@ -114,6 +117,7 @@ def generate_launch_description():
   ld.add_action(declare_terrainZ)
   ld.add_action(declare_vehicleYaw)
   ld.add_action(declare_gazebo_gui)
+  ld.add_action(declare_gazebo_timeout)
   ld.add_action(declare_checkTerrainConn)
 
   ld.add_action(start_local_planner)

@@ -37,6 +37,7 @@ def generate_launch_description():
   pause = LaunchConfiguration('pause')
   use_sim_time = LaunchConfiguration('use_sim_time')
   gui = LaunchConfiguration('gui')
+  gazebo_timeout = LaunchConfiguration('gazebo_timeout')
   record = LaunchConfiguration('record')
   verbose = LaunchConfiguration('verbose')
   world_name = LaunchConfiguration('world_name')
@@ -65,6 +66,7 @@ def generate_launch_description():
   declare_pause = DeclareLaunchArgument('pause', default_value='false', description='')
   declare_use_sim_time = DeclareLaunchArgument('use_sim_time', default_value='false', description='')
   declare_gui = DeclareLaunchArgument('gui', default_value='false', description='')
+  declare_gazebo_timeout = DeclareLaunchArgument('gazebo_timeout', default_value='30', description='')
   declare_record = DeclareLaunchArgument('record', default_value='false', description='')
   declare_verbose = DeclareLaunchArgument('verbose', default_value='false', description='')
   declare_world_name = DeclareLaunchArgument('world_name', default_value='garage', description='')
@@ -86,6 +88,7 @@ def generate_launch_description():
     package='gazebo_ros', 
     executable='spawn_entity.py',
     arguments=[
+      '-timeout', gazebo_timeout,
       '-entity', 'lidar',
       '-topic', 'robot_description',
     ],
@@ -97,6 +100,7 @@ def generate_launch_description():
     package='gazebo_ros', 
     executable='spawn_entity.py',
     arguments=[
+      '-timeout', gazebo_timeout,
       '-file', robot_xacro,
       '-entity', 'robot'
     ],
@@ -108,6 +112,7 @@ def generate_launch_description():
     package='gazebo_ros', 
     executable='spawn_entity.py',
     arguments=[
+      '-timeout', gazebo_timeout,
       '-file', camera_xacro,
       '-entity', 'camera'
       ],
@@ -191,6 +196,7 @@ def generate_launch_description():
   ld.add_action(declare_pause)
   ld.add_action(declare_use_sim_time)
   ld.add_action(declare_gui)
+  ld.add_action(declare_gazebo_timeout)
   ld.add_action(declare_record)
   ld.add_action(declare_verbose)
   ld.add_action(declare_world_name)
