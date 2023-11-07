@@ -46,6 +46,7 @@ def generate_launch_description():
       get_package_share_directory('vehicle_simulator'), 'launch', 'vehicle_system.launch.py')
     ),
     launch_arguments={
+      'namespace': 'single_vehicle',
       'vehicleHeight': vehicleHeight,
       'cameraOffsetZ': cameraOffsetZ,
       'vehicleX': vehicleX,

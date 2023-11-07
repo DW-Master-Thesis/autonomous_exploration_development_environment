@@ -2,11 +2,13 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, GroupAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource, FrontendLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration 
+from launch_ros.actions import PushRosNamespace
 
 def generate_launch_description():
+  namespace = LaunchConfiguration('namespace')
   vehicleHeight = LaunchConfiguration('vehicleHeight')
   cameraOffsetZ = LaunchConfiguration('cameraOffsetZ')
   vehicleX = LaunchConfiguration('vehicleX')
@@ -17,6 +19,7 @@ def generate_launch_description():
   gazebo_timeout = LaunchConfiguration('gazebo_timeout')
   checkTerrainConn = LaunchConfiguration('checkTerrainConn')
   
+  declare_namespace = DeclareLaunchArgument('namespace', default_value='/', description='')
   declare_vehicleHeight = DeclareLaunchArgument('vehicleHeight', default_value='0.75', description='')
   declare_cameraOffsetZ = DeclareLaunchArgument('cameraOffsetZ', default_value='0.0', description='')
   declare_vehicleX = DeclareLaunchArgument('vehicleX', default_value='0.0', description='')
@@ -58,6 +61,7 @@ def generate_launch_description():
       get_package_share_directory('vehicle_simulator'), 'launch', 'vehicle.launch.py')
     ),
     launch_arguments={
+      'namespace': namespace,
       'vehicleHeight': vehicleHeight,
       'cameraOffsetZ': cameraOffsetZ,
       'vehicleX': vehicleX,
@@ -88,10 +92,16 @@ def generate_launch_description():
   ld.add_action(declare_gazebo_timeout)
   ld.add_action(declare_checkTerrainConn)
 
-  ld.add_action(start_local_planner)
-  ld.add_action(start_terrain_analysis)
-  ld.add_action(start_terrain_analysis_ext)
+  start_actions_with_ns = GroupAction(
+    actions=[
+      PushRosNamespace(namespace=namespace),
+      start_local_planner,
+      start_terrain_analysis,
+      start_terrain_analysis_ext,
+      start_sensor_scan_generation,
+    ]
+  )
   ld.add_action(start_vehicle_simulator)
-  ld.add_action(start_sensor_scan_generation)
+  ld.add_action(start_actions_with_ns)
 
   return ld

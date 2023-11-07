@@ -8,6 +8,7 @@ from launch_ros.actions import Node
 from launch.substitutions import Command, LaunchConfiguration
 
 def generate_launch_description():
+  namespace = LaunchConfiguration('namespace')
   sensorOffsetX = LaunchConfiguration('sensorOffsetX')
   sensorOffsetY = LaunchConfiguration('sensorOffsetY')
   vehicleHeight = LaunchConfiguration('vehicleHeight')
@@ -35,6 +36,7 @@ def generate_launch_description():
   record = LaunchConfiguration('record')
   verbose = LaunchConfiguration('verbose')
 
+  declare_namespace = DeclareLaunchArgument('namespace', default_value='/', description='')
   declare_sensorOffsetX = DeclareLaunchArgument('sensorOffsetX', default_value='0.0', description='')
   declare_sensorOffsetY = DeclareLaunchArgument('sensorOffsetY', default_value='0.0', description='')
   declare_vehicleHeight = DeclareLaunchArgument('vehicleHeight', default_value='0.75', description='')
@@ -79,6 +81,7 @@ def generate_launch_description():
     package='gazebo_ros', 
     executable='spawn_entity.py',
     arguments=[
+      '-robot_namespace', namespace,
       '-timeout', gazebo_timeout,
       '-entity', 'lidar',
       '-topic', 'robot_description',
@@ -91,6 +94,7 @@ def generate_launch_description():
     package='gazebo_ros', 
     executable='spawn_entity.py',
     arguments=[
+      '-robot_namespace', namespace,
       '-timeout', gazebo_timeout,
       '-file', robot_xacro,
       '-entity', 'robot'
@@ -103,6 +107,7 @@ def generate_launch_description():
     package='gazebo_ros', 
     executable='spawn_entity.py',
     arguments=[
+      '-robot_namespace', namespace,
       '-timeout', gazebo_timeout,
       '-file', camera_xacro,
       '-entity', 'camera'
@@ -113,6 +118,7 @@ def generate_launch_description():
   start_vehicle_simulator = Node(
     package='vehicle_simulator', 
     executable='vehicleSimulator',
+    namespace=namespace,
     parameters=[
       {
         'use_gazebo_time': False,
@@ -153,6 +159,7 @@ def generate_launch_description():
   ld = LaunchDescription()
 
   # Add the actions
+  ld.add_action(declare_namespace)
   ld.add_action(declare_sensorOffsetX)
   ld.add_action(declare_sensorOffsetY)
   ld.add_action(declare_vehicleHeight)
