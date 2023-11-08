@@ -43,7 +43,7 @@ def generate_launch_description():
 
   start_single_vehicle_system = IncludeLaunchDescription(
     PythonLaunchDescriptionSource(os.path.join(
-      get_package_share_directory('vehicle_simulator'), 'launch', 'vehicle_system.launch.py')
+      get_package_share_directory('vehicle_simulator'), 'launch', 'vehicle_with_planner.launch.py')
     ),
     launch_arguments={
       'namespace': 'single_vehicle',
