@@ -46,7 +46,7 @@ def generate_launch_description():
       get_package_share_directory('vehicle_simulator'), 'launch', 'vehicle_with_planner.launch.py')
     ),
     launch_arguments={
-      'namespace': 'single_vehicle',
+      'namespace': '/single_vehicle',
       'vehicleHeight': vehicleHeight,
       'cameraOffsetZ': cameraOffsetZ,
       'vehicleX': vehicleX,
@@ -64,6 +64,7 @@ def generate_launch_description():
       get_package_share_directory('vehicle_simulator'), 'launch', 'visualization.launch.py')
     ),
     launch_arguments={
+      'namespace': '/single_vehicle',
       'world_name': world_name,
     }.items()
   )
