@@ -10,10 +10,10 @@ from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
-  world_name = LaunchConfiguration('world_name')
+  worldName = LaunchConfiguration('worldName')
   namespace = LaunchConfiguration('namespace')
 
-  declare_world_name = DeclareLaunchArgument('world_name', default_value="indoor", description='')
+  declare_worldName = DeclareLaunchArgument('worldName', default_value="indoor", description='')
   declare_namespace = DeclareLaunchArgument('namespace', default_value='/', description='')
 
   start_visualization_tools = IncludeLaunchDescription(
@@ -21,7 +21,7 @@ def generate_launch_description():
       get_package_share_directory('visualization_tools'), 'launch', 'visualization_tools.launch')
     ),
     launch_arguments={
-      'world_name': world_name,
+      'worldName': worldName,
     }.items()
   )
 
@@ -43,7 +43,7 @@ def generate_launch_description():
 
   # Add actions
   ld = LaunchDescription()
-  ld.add_action(declare_world_name)
+  ld.add_action(declare_worldName)
   ld.add_action(declare_namespace)
 
   start_actions_with_ns = GroupAction(

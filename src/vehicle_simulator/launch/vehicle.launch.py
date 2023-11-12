@@ -155,13 +155,6 @@ def generate_launch_description():
       output='screen'
   )
 
-  delayed_start_vehicle_simulator = TimerAction(
-    period=5.0,
-    actions=[
-      start_vehicle_simulator
-    ]
-  )
-
   ld = LaunchDescription()
 
   # Add the actions
@@ -195,6 +188,6 @@ def generate_launch_description():
 
   ld.add_action(start_lidar_state_publisher)
   ld.add_action(OpaqueFunction(function=spawn_robot_system, args=[robotName, gazeboTimeout]))
-  ld.add_action(delayed_start_vehicle_simulator)
+  ld.add_action(start_vehicle_simulator)
 
   return ld
