@@ -8,7 +8,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import PushRosNamespace
 
 def generate_launch_description():
-  namespace = LaunchConfiguration('namespace')
+  robotName = LaunchConfiguration('robotName')
   vehicleHeight = LaunchConfiguration('vehicleHeight')
   cameraOffsetZ = LaunchConfiguration('cameraOffsetZ')
   vehicleX = LaunchConfiguration('vehicleX')
@@ -16,10 +16,10 @@ def generate_launch_description():
   vehicleZ = LaunchConfiguration('vehicleZ')
   terrainZ = LaunchConfiguration('terrainZ')
   vehicleYaw = LaunchConfiguration('vehicleYaw')
-  gazebo_timeout = LaunchConfiguration('gazebo_timeout')
+  gazeboTimeout = LaunchConfiguration('gazeboTimeout')
   checkTerrainConn = LaunchConfiguration('checkTerrainConn')
   
-  declare_namespace = DeclareLaunchArgument('namespace', default_value='/', description='')
+  declare_robotName = DeclareLaunchArgument('robotName', default_value='/', description='')
   declare_vehicleHeight = DeclareLaunchArgument('vehicleHeight', default_value='0.75', description='')
   declare_cameraOffsetZ = DeclareLaunchArgument('cameraOffsetZ', default_value='0.0', description='')
   declare_vehicleX = DeclareLaunchArgument('vehicleX', default_value='0.0', description='')
@@ -27,7 +27,7 @@ def generate_launch_description():
   declare_vehicleZ = DeclareLaunchArgument('vehicleZ', default_value='0.0', description='')
   declare_terrainZ = DeclareLaunchArgument('terrainZ', default_value='0.0', description='')
   declare_vehicleYaw = DeclareLaunchArgument('vehicleYaw', default_value='0.0', description='')
-  declare_gazebo_timeout = DeclareLaunchArgument('gazebo_timeout', default_value='60.0', description='')
+  declare_gazeboTimeout = DeclareLaunchArgument('gazeboTimeout', default_value='60.0', description='')
   declare_checkTerrainConn = DeclareLaunchArgument('checkTerrainConn', default_value='false', description='')
   
   start_local_planner = IncludeLaunchDescription(
@@ -61,7 +61,7 @@ def generate_launch_description():
       get_package_share_directory('vehicle_simulator'), 'launch', 'vehicle.launch.py')
     ),
     launch_arguments={
-      'namespace': namespace,
+      'robotName': robotName,
       'vehicleHeight': vehicleHeight,
       'cameraOffsetZ': cameraOffsetZ,
       'vehicleX': vehicleX,
@@ -69,7 +69,7 @@ def generate_launch_description():
       'vehicleZ': vehicleZ,
       'terrainZ': terrainZ,
       'vehicleYaw': vehicleYaw,
-      'gazebo_timeout': gazebo_timeout,
+      'gazeboTimeout': gazeboTimeout,
     }.items()
   )
 
@@ -82,6 +82,7 @@ def generate_launch_description():
   ld = LaunchDescription()
 
   # Add the actions
+  ld.add_action(declare_robotName)
   ld.add_action(declare_vehicleHeight)
   ld.add_action(declare_cameraOffsetZ)
   ld.add_action(declare_vehicleX)
@@ -89,12 +90,12 @@ def generate_launch_description():
   ld.add_action(declare_vehicleZ)
   ld.add_action(declare_terrainZ)
   ld.add_action(declare_vehicleYaw)
-  ld.add_action(declare_gazebo_timeout)
+  ld.add_action(declare_gazeboTimeout)
   ld.add_action(declare_checkTerrainConn)
 
   start_actions_with_ns = GroupAction(
     actions=[
-      PushRosNamespace(namespace=namespace),
+      PushRosNamespace(namespace=robotName),
       start_local_planner,
       start_terrain_analysis,
       start_terrain_analysis_ext,

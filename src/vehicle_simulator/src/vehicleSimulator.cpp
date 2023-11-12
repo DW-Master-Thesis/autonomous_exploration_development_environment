@@ -2,6 +2,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <chrono>
 #include <iostream>
 #include "rclcpp/rclcpp.hpp"
@@ -46,6 +47,7 @@ using namespace std;
 
 const double PI = 3.1415926;
 
+string vehicleName = "";
 bool use_gazebo_time = false;
 double cameraOffsetZ = 0;
 double sensorOffsetX = 0;
@@ -310,6 +312,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
   auto nh = rclcpp::Node::make_shared("vehicleSimulator");
 
+  nh->declare_parameter<string>("vehicleName", vehicleName);
   nh->declare_parameter<bool>("use_gazebo_time", use_gazebo_time);
   nh->declare_parameter<double>("cameraOffsetZ", cameraOffsetZ);
   nh->declare_parameter<double>("sensorOffsetX", sensorOffsetX);
@@ -331,6 +334,7 @@ int main(int argc, char** argv)
   nh->declare_parameter<double>("InclFittingThre", InclFittingThre);
   nh->declare_parameter<double>("maxIncl", maxIncl);
 
+  nh->get_parameter("vehicleName", vehicleName);
   nh->get_parameter("use_gazebo_time", use_gazebo_time);
   nh->get_parameter("cameraOffsetZ", cameraOffsetZ);
   nh->get_parameter("sensorOffsetX", sensorOffsetX);
@@ -369,11 +373,11 @@ int main(int argc, char** argv)
   odomTrans.frame_id_ = "map";
 
   gazebo_msgs::msg::EntityState cameraState;
-  cameraState.name = "camera";
+  cameraState.name = vehicleName + "_camera";
   gazebo_msgs::msg::EntityState lidarState;
-  lidarState.name = "lidar";
+  lidarState.name = vehicleName + "_lidar";
   gazebo_msgs::msg::EntityState robotState;
-  robotState.name = "robot";
+  robotState.name = vehicleName + "_robot";
 
   rclcpp::Client<gazebo_msgs::srv::SetEntityState>::SharedPtr client = nh->create_client<gazebo_msgs::srv::SetEntityState>("/set_entity_state");
   auto request  = std::make_shared<gazebo_msgs::srv::SetEntityState::Request>();
