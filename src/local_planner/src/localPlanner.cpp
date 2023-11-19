@@ -42,6 +42,7 @@ const double PI = 3.1415926;
 
 #define PLOTPATHSET 1
 
+string vehicleName = "robot_1";
 string pathFolder;
 double vehicleLength = 0.6;
 double vehicleWidth = 0.6;
@@ -467,6 +468,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
   nh = rclcpp::Node::make_shared("localPlanner");
 
+  nh->declare_parameter<std::string>("vehicleName", vehicleName);
   nh->declare_parameter<std::string>("pathFolder", pathFolder);
   nh->declare_parameter<double>("vehicleLength", vehicleLength);
   nh->declare_parameter<double>("vehicleWidth", vehicleWidth);
@@ -505,6 +507,7 @@ int main(int argc, char** argv)
   nh->declare_parameter<double>("goalX", goalX);
   nh->declare_parameter<double>("goalY", goalY);
 
+  nh->get_parameter("vehicleName", vehicleName);
   nh->get_parameter("pathFolder", pathFolder);
   nh->get_parameter("vehicleLength", vehicleLength);
   nh->get_parameter("vehicleWidth", vehicleWidth);
@@ -848,7 +851,7 @@ int main(int argc, char** argv)
           }
 
           path.header.stamp = rclcpp::Time(static_cast<uint64_t>(odomTime * 1e9));
-          path.header.frame_id = "vehicle";
+          path.header.frame_id = vehicleName;
           pubPath->publish(path);
 
           #if PLOTPATHSET == 1
@@ -894,7 +897,7 @@ int main(int argc, char** argv)
           sensor_msgs::msg::PointCloud2 freePaths2;
           pcl::toROSMsg(*freePaths, freePaths2);
           freePaths2.header.stamp = rclcpp::Time(static_cast<uint64_t>(odomTime * 1e9));
-          freePaths2.header.frame_id = "vehicle";
+          freePaths2.header.frame_id = vehicleName;
           pubFreePaths->publish(freePaths2);
           #endif
         }
@@ -920,7 +923,7 @@ int main(int argc, char** argv)
         path.poses[0].pose.position.z = 0;
 
         path.header.stamp = rclcpp::Time(static_cast<uint64_t>(odomTime * 1e9));
-        path.header.frame_id = "vehicle";
+        path.header.frame_id = vehicleName;
         pubPath->publish(path);
 
         #if PLOTPATHSET == 1
@@ -928,7 +931,7 @@ int main(int argc, char** argv)
         sensor_msgs::msg::PointCloud2 freePaths2;
         pcl::toROSMsg(*freePaths, freePaths2);
         freePaths2.header.stamp = rclcpp::Time(static_cast<uint64_t>(odomTime * 1e9));
-        freePaths2.header.frame_id = "vehicle";
+        freePaths2.header.frame_id = vehicleName;
         pubFreePaths->publish(freePaths2);
         #endif
       }

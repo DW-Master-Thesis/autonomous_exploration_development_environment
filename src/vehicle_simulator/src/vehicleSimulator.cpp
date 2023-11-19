@@ -446,7 +446,7 @@ int main(int argc, char** argv)
     odomTrans.setRotation(tf2::Quaternion(geoQuat.x, geoQuat.y, geoQuat.z, geoQuat.w));
     odomTrans.setOrigin(tf2::Vector3(vehicleX, vehicleY, vehicleZ));
     transformTfGeom = tf2::toMsg(odomTrans);
-    transformTfGeom.child_frame_id = vehicleName + "_sensor";
+    transformTfGeom.child_frame_id = vehicleName;
     transformTfGeom.header.stamp = odomTime;
     tfBroadcaster->sendTransform(transformTfGeom);
 
