@@ -1,8 +1,9 @@
 <launch>
 
   <arg name="worldName" default="garage"/>
+  <arg name="robotName" default="robot_1"/>
 
-  <node pkg="visualization_tools" exec="visualizationTools" name="visualizationTools" output="screen">
+  <node pkg="visualization_tools" exec="visualizationTools" name="visualizationTools" namespace="$(var robotName)" output="screen">
     <param name="metricFile" value="$(find-pkg-prefix vehicle_simulator)/log/metrics" />
     <param name="trajFile" value="$(find-pkg-prefix vehicle_simulator)/log/trajectory" />
     <param name="mapFile" value="$(find-pkg-share vehicle_simulator)/mesh/$(var worldName)/preview/pointcloud.ply" />

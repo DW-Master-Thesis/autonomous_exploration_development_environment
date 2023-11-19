@@ -51,6 +51,7 @@ install(TARGETS
 
 install(
   DIRECTORY
+  config
   launch
   log
   mesh
