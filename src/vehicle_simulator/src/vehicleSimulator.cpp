@@ -365,7 +365,7 @@ int main(int argc, char** argv)
   auto pubVehicleOdom = nh->create_publisher<nav_msgs::msg::Odometry>("state_estimation", 5);
   nav_msgs::msg::Odometry odomData;
   odomData.header.frame_id = "map";
-  odomData.child_frame_id = "sensor";
+  odomData.child_frame_id = vehicleName + "_sensor";
 
   auto tfBroadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*nh);
   tf2::Stamped<tf2::Transform> odomTrans;
@@ -446,7 +446,7 @@ int main(int argc, char** argv)
     odomTrans.setRotation(tf2::Quaternion(geoQuat.x, geoQuat.y, geoQuat.z, geoQuat.w));
     odomTrans.setOrigin(tf2::Vector3(vehicleX, vehicleY, vehicleZ));
     transformTfGeom = tf2::toMsg(odomTrans);
-    transformTfGeom.child_frame_id = "sensor";
+    transformTfGeom.child_frame_id = vehicleName + "_sensor";
     transformTfGeom.header.stamp = odomTime;
     tfBroadcaster->sendTransform(transformTfGeom);
 
