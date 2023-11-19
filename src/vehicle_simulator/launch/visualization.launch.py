@@ -34,13 +34,6 @@ def generate_launch_description():
     namespace=namespace,
   )
 
-  delayed_start_rviz = TimerAction(
-    period=8.0,
-    actions=[
-      start_rviz
-    ]
-  )
-
   # Add actions
   ld = LaunchDescription()
   ld.add_action(declare_worldName)
@@ -54,6 +47,6 @@ def generate_launch_description():
   )
 
   ld.add_action(start_actions_with_ns)
-  ld.add_action(delayed_start_rviz)
+  ld.add_action(start_rviz)
   
   return ld
