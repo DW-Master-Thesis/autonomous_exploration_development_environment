@@ -5,6 +5,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource, FrontendLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration 
+from launch_ros.actions import Node
 
 def generate_launch_description():
   worldName = LaunchConfiguration('worldName')
@@ -59,14 +60,22 @@ def generate_launch_description():
     }.items()
   )
 
-  start_visualization = IncludeLaunchDescription(
-    PythonLaunchDescriptionSource(os.path.join(
-      get_package_share_directory('vehicle_simulator'), 'launch', 'visualization.launch.py')
+  start_visualization_tools = IncludeLaunchDescription(
+    FrontendLaunchDescriptionSource(os.path.join(
+      get_package_share_directory('visualization_tools'), 'launch', 'visualization_tools.launch')
     ),
     launch_arguments={
-      'namespace': 'robot_1',
       'worldName': worldName,
+      'robotName': 'robot_1',
     }.items()
+  )
+
+  rviz_config_file = os.path.join(get_package_share_directory('vehicle_simulator'), 'rviz', 'single_agent_simulator.rviz')
+  start_rviz = Node(
+    package='rviz2',
+    executable='rviz2',
+    arguments=['-d', rviz_config_file],
+    output='screen',
   )
 
   ld = LaunchDescription()
@@ -86,6 +95,7 @@ def generate_launch_description():
 
   ld.add_action(start_single_vehicle_system)
   ld.add_action(start_gazebo)
-  ld.add_action(start_visualization)
+  ld.add_action(start_visualization_tools)
+  ld.add_action(start_rviz)
 
   return ld

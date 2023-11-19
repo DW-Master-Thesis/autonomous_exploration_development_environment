@@ -54,6 +54,7 @@ private:
   
   rviz_common::properties::StringProperty * topic_property_;
   rviz_common::properties::QosProfileProperty * qos_profile_property_;
+  rviz_common::properties::StringProperty * robot_name_property_;
 
   rclcpp::QoS qos_profile_;
 };

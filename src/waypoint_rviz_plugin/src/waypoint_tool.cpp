@@ -19,6 +19,9 @@ WaypointTool::WaypointTool()
   
   qos_profile_property_ = new rviz_common::properties::QosProfileProperty(
     topic_property_, qos_profile_);
+
+  robot_name_property_ = new rviz_common::properties::StringProperty("Robot Name", "robot", "The name of the robot.",
+                                       getPropertyContainer(), SLOT(updateTopic()), this);
 }
 
 WaypointTool::~WaypointTool() = default;
@@ -39,7 +42,8 @@ void WaypointTool::updateTopic()
     context_->getRosNodeAbstraction().lock()->get_raw_node();
   sub_ = raw_node->template create_subscription<nav_msgs::msg::Odometry>("state_estimation", 5 ,std::bind(&WaypointTool::odomHandler,this,std::placeholders::_1));
   
-  pub_ = raw_node->template create_publisher<geometry_msgs::msg::PointStamped>("way_point", qos_profile_);
+  std::string pub_topic_name_ = robot_name_property_->getStdString() + "/" + topic_property_->getStdString();
+  pub_ = raw_node->template create_publisher<geometry_msgs::msg::PointStamped>(pub_topic_name_, qos_profile_);
   clock_ = raw_node->get_clock();
 }
 
