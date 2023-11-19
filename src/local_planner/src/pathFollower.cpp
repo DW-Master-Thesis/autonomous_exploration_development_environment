@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <chrono>
+#include <string>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/time.hpp"
@@ -37,6 +38,7 @@ using namespace std;
 
 const double PI = 3.1415926;
 
+string vehicleName = "robot_1";
 double sensorOffsetX = 0;
 double sensorOffsetY = 0;
 int pubSkipNum = 1;
@@ -161,6 +163,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
   nh = rclcpp::Node::make_shared("pathFollower");
 
+  nh->declare_parameter<string>("vehicleName", vehicleName);
   nh->declare_parameter<double>("sensorOffsetX", sensorOffsetX);
   nh->declare_parameter<double>("sensorOffsetY", sensorOffsetY);
   nh->declare_parameter<int>("pubSkipNum", pubSkipNum);
@@ -189,6 +192,7 @@ int main(int argc, char** argv)
   nh->declare_parameter<bool>("autonomyMode", autonomyMode);
   nh->declare_parameter<double>("autonomySpeed", autonomySpeed);
 
+  nh->get_parameter("vehicleName", vehicleName);
   nh->get_parameter("sensorOffsetX", sensorOffsetX);
   nh->get_parameter("sensorOffsetY", sensorOffsetY);
   nh->get_parameter("pubSkipNum", pubSkipNum);
@@ -228,7 +232,7 @@ int main(int argc, char** argv)
   auto pubSpeed = nh->create_publisher<geometry_msgs::msg::TwistStamped>("cmd_vel", 5);
 
   geometry_msgs::msg::TwistStamped cmd_vel;
-  cmd_vel.header.frame_id = "vehicle";
+  cmd_vel.header.frame_id = vehicleName;
 
   if (autonomyMode) {
     speedRatio = autonomySpeed / maxSpeed;

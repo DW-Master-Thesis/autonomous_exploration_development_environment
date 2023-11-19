@@ -35,6 +35,7 @@ def generate_launch_description():
       get_package_share_directory('local_planner'), 'launch', 'local_planner.launch')
     ),
     launch_arguments={
+      'robotName': robotName,
       'cameraOffsetZ': cameraOffsetZ,
       'goalX': vehicleX,
       'goalY': vehicleY,
@@ -93,10 +94,10 @@ def generate_launch_description():
   ld.add_action(declare_gazeboTimeout)
   ld.add_action(declare_checkTerrainConn)
 
+  ld.add_action(start_local_planner)
   start_actions_with_ns = GroupAction(
     actions=[
       PushRosNamespace(namespace=robotName),
-      start_local_planner,
       start_terrain_analysis,
       start_terrain_analysis_ext,
       start_sensor_scan_generation,
