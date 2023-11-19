@@ -11,7 +11,7 @@ from launch.substitutions import Command, LaunchConfiguration
 def spawn_robot_system(context, robotName, gazeboTimeout):
   robot_name_str = str(robotName.perform(context))
   spawn_lidar = Node(
-    package='gazebo_ros', 
+    package='gazebo_ros',
     executable='spawn_entity.py',
     arguments=[
       '-robot_namespace', robotName,
@@ -24,7 +24,7 @@ def spawn_robot_system(context, robotName, gazeboTimeout):
 
   robot_xacro = os.path.join(get_package_share_directory('vehicle_simulator'), 'urdf', 'robot.sdf')
   spawn_robot = Node(
-    package='gazebo_ros', 
+    package='gazebo_ros',
     executable='spawn_entity.py',
     arguments=[
       '-robot_namespace', robotName,
@@ -37,7 +37,7 @@ def spawn_robot_system(context, robotName, gazeboTimeout):
 
   camera_xacro = os.path.join(get_package_share_directory('vehicle_simulator'), 'urdf', 'camera.urdf.xacro')
   spawn_camera = Node(
-    package='gazebo_ros', 
+    package='gazebo_ros',
     executable='spawn_entity.py',
     arguments=[
       '-robot_namespace', robotName,
