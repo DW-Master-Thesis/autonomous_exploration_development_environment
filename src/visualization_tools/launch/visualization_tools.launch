@@ -16,6 +16,6 @@
     <param name="exploredAreaDisplayInterval" value="1" />
   </node>
 
-  <node pkg="visualization_tools" exec="realTimePlot.py" name="realTimePlot" output="screen"/>
+  <node pkg="visualization_tools" exec="realTimePlot.py" name="realTimePlot" namespace="$(var robotName)" output="screen"/>
 
 </launch>
