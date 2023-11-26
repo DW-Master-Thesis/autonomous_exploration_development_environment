@@ -31,10 +31,13 @@ find_package(pcl_conversions REQUIRED)
 find_package(pcl_ros REQUIRED)
 
 add_executable(visualizationTools src/visualizationTools.cpp)
-ament_target_dependencies(visualizationTools rclcpp rclpy std_msgs sensor_msgs nav_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs message_filters pcl_ros pcl_conversions)
+add_executable(multiAgentVisualizationTools src/multiAgentVisualizationTools.cpp)
+ament_target_dependencies(visualizationTools rclpy std_msgs sensor_msgs nav_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs message_filters pcl_ros pcl_conversions)
+ament_target_dependencies(multiAgentVisualizationTools rclpy std_msgs sensor_msgs pcl_ros pcl_conversions)
 
 install(TARGETS
   visualizationTools
+  multiAgentVisualizationTools
   DESTINATION lib/${PROJECT_NAME})
 
 install(

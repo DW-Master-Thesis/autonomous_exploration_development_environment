@@ -76,6 +76,16 @@ def generate_launch_description():
     }.items()
   )
 
+  start_multi_agent_visualization_tools = IncludeLaunchDescription(
+    FrontendLaunchDescriptionSource(os.path.join(
+      get_package_share_directory('visualization_tools'), 'launch', 'multi_agent_visualization_tools.launch.xml')
+    ),
+    launch_arguments={
+      'robotNames': "[robot_1, robot_2, robot_3]",
+      'worldName': worldName,
+    }.items()
+  )
+
   rviz_config_file = os.path.join(get_package_share_directory('vehicle_simulator'), 'rviz', 'multi_agent_simulator.rviz')
   start_rviz = Node(
     package='rviz2',
@@ -98,6 +108,7 @@ def generate_launch_description():
     function=start_vehicles_and_visualization_tools,
     args=[agentsConfigFile, gazeboTimeout, checkTerrainConn, worldName],
   ))
+  ld.add_action(start_multi_agent_visualization_tools)
   ld.add_action(start_rviz)
 
   return ld
