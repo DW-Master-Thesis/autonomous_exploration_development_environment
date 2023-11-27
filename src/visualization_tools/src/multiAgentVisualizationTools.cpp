@@ -13,20 +13,36 @@
 using namespace std;
 
 double exploredVoxelSize = 0.5;
+bool systemInitialized = false;
+double systemTime = 0;
+double systemInitTime = 0;
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr exploredCloud(new pcl::PointCloud<pcl::PointXYZI>());
 pcl::PointCloud<pcl::PointXYZI>::Ptr exploredCloud2(new pcl::PointCloud<pcl::PointXYZI>());
 pcl::VoxelGrid<pcl::PointXYZI> exploredDwzFilter;
 
-float exploredVolume = 0;
+float exploredVolume = 0, timeDuration = 0;
 vector<string> robotNames;
 
 shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> pubExploredAreasPtr;
 shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> pubExploredVolumePtr;
+shared_ptr<rclcpp::Publisher<std_msgs::msg::Float32>> pubTimeDurationPtr;
 vector<shared_ptr<rclcpp::Subscription<sensor_msgs::msg::PointCloud2>>> subExploredAreasPtrs;
 
 void exploredAreaHandler(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
+  systemTime = rclcpp::Time(msg->header.stamp).seconds();
+  if (!systemInitialized) {
+    systemInitialized = true;
+    systemInitTime = systemTime;
+  }
+  if (systemInitialized) {
+    timeDuration = systemTime - systemInitTime;
+    std_msgs::msg::Float32 timeDurationMsg;
+    timeDurationMsg.data = timeDuration;
+    pubTimeDurationPtr->publish(timeDurationMsg);
+  }
+
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::fromROSMsg(*msg, *cloud);
 
@@ -74,6 +90,7 @@ int main(int argc, char** argv)
 
   pubExploredAreasPtr = nh->create_publisher<sensor_msgs::msg::PointCloud2>("explored_areas", 5);
   pubExploredVolumePtr = nh->create_publisher<std_msgs::msg::Float32>("explored_volume", 5);
+  pubTimeDurationPtr = nh->create_publisher<std_msgs::msg::Float32>("time_duration", 5);
 
   exploredDwzFilter.setLeafSize(exploredVoxelSize, exploredVoxelSize, exploredVoxelSize);
 

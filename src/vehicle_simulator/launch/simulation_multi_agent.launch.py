@@ -16,7 +16,9 @@ def get_default_agents_config_filepath():
 def start_vehicles_and_visualization_tools(context, agentsConfigFile, gazeboTimeout, checkTerrainConn, worldName):
   agents_config_filepath = str(agentsConfigFile.perform(context))
   launch_descriptions = []
-  for robot_name, robot_config in yaml.safe_load(open(agents_config_filepath)).items():
+  robots_config = yaml.safe_load(open(agents_config_filepath))
+  robot_names = list(robots_config.keys())
+  for robot_name, robot_config in robots_config.items():
     for key, value in robot_config.items():
       robot_config[key] = str(value)
     start_vehicle = IncludeLaunchDescription(
@@ -46,6 +48,29 @@ def start_vehicles_and_visualization_tools(context, agentsConfigFile, gazeboTime
       }.items()
     )
     launch_descriptions.extend([start_vehicle, start_visualization_tools])
+
+  start_multi_agent_visualization_tools = IncludeLaunchDescription(
+    FrontendLaunchDescriptionSource(os.path.join(
+      get_package_share_directory('visualization_tools'), 'launch', 'multi_agent_visualization_tools.launch.xml')
+    ),
+    launch_arguments={
+      'robotNames': yaml.dump(robot_names),
+      'worldName': worldName,
+    }.items()
+  )
+  launch_descriptions.append(start_multi_agent_visualization_tools)
+
+  start_real_time_plot = Node(
+    package='visualization_tools',
+    executable='realTimePlot.py',
+    name='realTimePlot',
+    output='screen',
+    parameters=[
+      {'robot_names':  robot_names},
+    ],
+  )
+  launch_descriptions.append(start_real_time_plot)
+
   return launch_descriptions
 
 
@@ -76,16 +101,6 @@ def generate_launch_description():
     }.items()
   )
 
-  start_multi_agent_visualization_tools = IncludeLaunchDescription(
-    FrontendLaunchDescriptionSource(os.path.join(
-      get_package_share_directory('visualization_tools'), 'launch', 'multi_agent_visualization_tools.launch.xml')
-    ),
-    launch_arguments={
-      'robotNames': "[robot_1, robot_2, robot_3]",
-      'worldName': worldName,
-    }.items()
-  )
-
   rviz_config_file = os.path.join(get_package_share_directory('vehicle_simulator'), 'rviz', 'multi_agent_simulator.rviz')
   start_rviz = Node(
     package='rviz2',
@@ -108,7 +123,6 @@ def generate_launch_description():
     function=start_vehicles_and_visualization_tools,
     args=[agentsConfigFile, gazeboTimeout, checkTerrainConn, worldName],
   ))
-  ld.add_action(start_multi_agent_visualization_tools)
   ld.add_action(start_rviz)
 
   return ld

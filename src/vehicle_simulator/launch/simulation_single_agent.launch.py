@@ -70,6 +70,16 @@ def generate_launch_description():
     }.items()
   )
 
+  start_real_time_plot = Node(
+    package='visualization_tools',
+    executable='realTimePlot.py',
+    name='realTimePlot',
+    output='screen',
+    parameters=[
+      {'robot_names': ["robot_1"]},
+    ],
+  )
+
   rviz_config_file = os.path.join(get_package_share_directory('vehicle_simulator'), 'rviz', 'single_agent_simulator.rviz')
   start_rviz = Node(
     package='rviz2',
@@ -96,6 +106,7 @@ def generate_launch_description():
   ld.add_action(start_single_vehicle_system)
   ld.add_action(start_gazebo)
   ld.add_action(start_visualization_tools)
+  ld.add_action(start_real_time_plot)
   ld.add_action(start_rviz)
 
   return ld

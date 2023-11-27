@@ -6,151 +6,171 @@ import matplotlib as mpl
 
 import rclpy
 from rclpy.node import Node
+from rcl_interfaces.msg import ParameterType, ParameterDescriptor
 from std_msgs.msg import Float32
 
 mpl.rcParams['toolbar'] = 'None'
 plt.ion()
 
 time_duration = 0
-start_time_duration = 0
-first_iteration = 'True'
+first_iteration = True
 
-explored_volume = 0
-traveling_distance = 0
-run_time = 0
-max_explored_volume = 0
-max_traveling_diatance = 0
-max_run_time = 0
+explored_volume: np.ndarray = np.array([])
+explored_volume_time: np.ndarray = np.array([])
+traveling_distances: dict[np.ndarray] = {}
+traveling_distances_time: dict[np.ndarray] = {}
+run_times: dict[np.ndarray] = {}
+run_times_time: dict[np.ndarray] = {}
 
-time_list1 = np.array([])
-time_list2 = np.array([])
-time_list3 = np.array([])
-run_time_list = np.array([])
-explored_volume_list = np.array([])
-traveling_distance_list = np.array([])
 
 def timeDurationCallback(msg):
-    global time_duration, start_time_duration, first_iteration
-    time_duration = msg.data
-    if first_iteration == 'True':
-        start_time_duration = time_duration
-        first_iteration = 'False'
-
-def runTimeCallback(msg):
-    global run_time
-    run_time = msg.data
+  global time_duration, first_iteration
+  if first_iteration == True:
+    first_iteration = False
+  time_duration = msg.data
 
 def exploredVolumeCallback(msg):
-    global explored_volume
-    explored_volume = msg.data
+  global explored_volume, explored_volume_time, time_duration
+  explored_volume = np.append(explored_volume, msg.data)
+  explored_volume_time = np.append(explored_volume_time, time_duration)
 
-def travelingDistanceCallback(msg):
-    global traveling_distance
-    traveling_distance = msg.data
+def create_run_time_callback(robot_name):
+  def run_time_callback(msg):
+    global run_times, run_times_time, time_duration
+    run_times[robot_name] = np.append(run_times[robot_name], msg.data)
+    run_times_time[robot_name] = np.append(run_times_time[robot_name], time_duration)
+  return run_time_callback
+
+def create_traveling_distance_callback(robot_name):
+  def traveling_distance_callback(msg):
+    global traveling_distances, traveling_distances_time, time_duration
+    traveling_distances[robot_name] = np.append(traveling_distances[robot_name], msg.data)
+    traveling_distances_time[robot_name] = np.append(traveling_distances_time[robot_name], time_duration)
+  return traveling_distance_callback
 
 class Listener(Node):
 
-    def __init__(self):
-        global time_duration, start_time_duration, explored_volume, traveling_distance, run_time, max_explored_volume, max_traveling_diatance, max_run_time, time_list1, time_list2, time_list3, run_time_list, explored_volume_list, traveling_distance_list
-        super().__init__('realTimePlot')
+  def __init__(self):
+    super().__init__('realTimePlot')
 
-        self.fig=plt.figure(figsize=(8,7))
-        self.fig1=self.fig.add_subplot(311)
-        plt.title("Exploration Metrics\n", fontsize=14)
-        plt.margins(x=0.001)
-        self.fig1.set_ylabel("Explored\nVolume (m$^3$)", fontsize=12)
-        self.l1, = self.fig1.plot(time_list2, explored_volume_list, color='r', label='Explored Volume')
-        self.fig2=self.fig.add_subplot(312)
-        self.fig2.set_ylabel("Traveling\nDistance (m)", fontsize=12)
-        self.l2, = self.fig2.plot(time_list3, traveling_distance_list, color='r', label='Traveling Distance')
-        self.fig3=self.fig.add_subplot(313)
-        self.fig3.set_ylabel("Algorithm\nRuntime (s)", fontsize=12)
-        self.fig3.set_xlabel("Time Duration (s)", fontsize=12) #only set once
-        self.l3, = self.fig3.plot(time_list1, run_time_list, color='r', label='Algorithm Runtime')
+    self._robot_names: list[str] = []
+    self.declare_parameter("robot_names", ["robot_1"])
+    self._robot_names = self.get_parameter("robot_names").value
 
-        self.fig.canvas.draw()
+    self._init_data()
+    self._init_figure()
+    self._init_subscriptions()
+    self.timer = self.create_timer(0.5, self.plot_callback)
 
-        self.count = 0
+  def _init_data(self):
+    global traveling_distances, traveling_distances_time, run_times, run_times_time
+    for robot_name in self._robot_names:
+      traveling_distances[robot_name] = np.array([])
+      traveling_distances_time[robot_name] = np.array([])
+      run_times[robot_name] = np.array([])
+      run_times_time[robot_name] = np.array([])
 
-        self.time_duration_subscription = self.create_subscription(
-            Float32,
-            'time_duration',
-            timeDurationCallback,
-            10)
-        self.time_duration_subscription  # prevent unused variable warning 
+  def _init_figure(self):
+    self.fig, (self.fig1, self.fig2, self.fig3) = plt.subplots(3, 1, sharex=True, figsize=(8,7))
+    self.fig.suptitle("Exploration Metrics\n", fontsize=14)
+    plt.margins(x=0.001)
+    self.fig1.set_ylabel("Explored\nVolume (m$^3$)", fontsize=12)
+    self._explored_volume_line = self.fig1.plot(
+      explored_volume_time, explored_volume, color='r', label='Explored Volume'
+    )[0]
+    self.fig2.set_ylabel("Traveling\nDistance (m)", fontsize=12)
+    self._traveled_distance_lines = {
+      robot_name: self.fig2.plot(
+        traveling_distances_time[robot_name], traveling_distances[robot_name], label=robot_name
+      )[0]
+      for robot_name in self._robot_names
+    }
+    self.fig3.set_ylabel("Algorithm\nRuntime (s)", fontsize=12)
+    self.fig3.set_xlabel("Time Duration (s)", fontsize=12) #only set once
+    self._run_time_lines = {
+      robot_name: self.fig3.plot(
+        run_times_time[robot_name], run_times[robot_name], label=robot_name
+      )[0]
+      for robot_name in self._robot_names
+    }
+    self.fig.legend(handles=self._run_time_lines.values(), loc='upper right', bbox_to_anchor=(1.0, 0.5))
 
-        self.runtime_subscription = self.create_subscription(
-            Float32,
-            'runtime',
-            runTimeCallback,
-            10)
-        self.runtime_subscription  # prevent unused variable warning 
+  def _init_subscriptions(self):
+    time_duration_topic = f"{self._robot_names[0]}/time_duration" if len(self._robot_names) == 1 else "time_duration"
+    self.time_duration_subscriptions = self.create_subscription(
+      Float32,
+      time_duration_topic,
+      timeDurationCallback,
+      10,
+    )
 
-        self.explored_volume_subscription = self.create_subscription(
-            Float32,
-            'explored_volume',
-            exploredVolumeCallback,
-            10)
-        self.explored_volume_subscription  
+    explored_volume_topic = f"{self._robot_names[0]}/explored_volume" if len(self._robot_names) == 1 else "explored_volume"
+    self.explored_volume_subscription = self.create_subscription(
+      Float32,
+      explored_volume_topic,
+      exploredVolumeCallback,
+      10,
+    )
 
-        self.traveling_distance_subscription = self.create_subscription(
-            Float32,
-            'traveling_distance',
-            travelingDistanceCallback,
-            10)
-        self.traveling_distance_subscription  
+    self.runtime_subscriptions = []
+    self.traveling_distance_subscriptions = []
+    for robot_name in self._robot_names:
+      runTimeCallback = create_run_time_callback(robot_name)
+      travelingDistanceCallback = create_traveling_distance_callback(robot_name)
+      self.runtime_subscriptions.append(
+        self.create_subscription(
+          Float32,
+          f"{robot_name}/runtime",
+          runTimeCallback,
+          10,
+        )
+      )
+      self.traveling_distance_subscriptions.append(
+        self.create_subscription(
+          Float32,
+          f"{robot_name}/traveling_distance",
+          travelingDistanceCallback,
+          10,
+        )
+      )
 
-        timer_period = 0.01  # 100hz 
-        self.timer = self.create_timer(timer_period, self.plot_callback)
+  def plot_callback(self):
+    global explored_volume, explored_volume_time, traveling_distances, traveling_distances_time, run_times, run_times_time, time_duration
 
-    def plot_callback(self):
-        global time_duration, start_time_duration, explored_volume, traveling_distance, run_time, max_explored_volume, max_traveling_diatance, max_run_time, time_list1, time_list2, time_list3, run_time_list, explored_volume_list, traveling_distance_list
-        self.count = self.count + 1
+    self._explored_volume_line.set_xdata(explored_volume_time)
+    self._explored_volume_line.set_ydata(explored_volume)
+    for robot_name in self._robot_names:
+      self._traveled_distance_lines[robot_name].set_xdata(traveling_distances_time[robot_name])
+      self._traveled_distance_lines[robot_name].set_ydata(traveling_distances[robot_name])
+      self._run_time_lines[robot_name].set_xdata(run_times_time[robot_name])
+      self._run_time_lines[robot_name].set_ydata(run_times[robot_name])
 
-        if self.count % 25 == 0:
-            max_explored_volume = explored_volume
-            max_traveling_diatance = traveling_distance
-            if run_time > max_run_time:
-                max_run_time = run_time
+    max_explored_volume = 0 if explored_volume.size == 0 else max(explored_volume)
+    max_traveling_distance = [max(traveling_distances[robot_name]) for robot_name in self._robot_names if traveling_distances[robot_name].size > 0]
+    max_traveling_distance = 0 if len(max_traveling_distance) == 0 else max(max_traveling_distance)
+    max_run_time = [max(run_times[robot_name]) for robot_name in self._robot_names if run_times[robot_name].size > 0]
+    max_run_time = 0 if len(max_run_time) == 0 else max(max_run_time)
+    self.fig1.set_ylim(0, max_explored_volume + 500)
+    self.fig2.set_ylim(0, max_traveling_distance + 20)
+    self.fig3.set_ylim(0, max_run_time + 0.2)
+    self.fig1.set_xlim(0, time_duration + 10)
+    self.fig2.set_xlim(0, time_duration + 10)
+    self.fig3.set_xlim(0, time_duration + 10)
+    plt.pause(0.001)
 
-            time_list2 = np.append(time_list2, time_duration)
-            explored_volume_list = np.append(explored_volume_list, explored_volume)
-            time_list3 = np.append(time_list3, time_duration)
-            traveling_distance_list = np.append(traveling_distance_list, traveling_distance)
-            time_list1 = np.append(time_list1, time_duration)
-            run_time_list = np.append(run_time_list, run_time)
-
-        if self.count >= 100:
-            self.count = 0
-            self.l1.set_xdata(time_list2)
-            self.l2.set_xdata(time_list3)
-            self.l3.set_xdata(time_list1)
-            self.l1.set_ydata(explored_volume_list)
-            self.l2.set_ydata(traveling_distance_list)
-            self.l3.set_ydata(run_time_list)
-
-            self.fig1.set_ylim(0, max_explored_volume + 500)
-            self.fig1.set_xlim(start_time_duration, time_duration + 10)
-            self.fig2.set_ylim(0, max_traveling_diatance + 20)
-            self.fig2.set_xlim(start_time_duration, time_duration + 10)
-            self.fig3.set_ylim(0, max_run_time + 0.2)
-            self.fig3.set_xlim(start_time_duration, time_duration + 10)
-
-            self.fig.canvas.draw()
-            plt.pause(0.01)
 
 def main(args=None):
-    rclpy.init(args=args)
+  rclpy.init(args=args)
 
-    listener = Listener()
+  listener = Listener()
 
-    rclpy.spin(listener)
+  rclpy.spin(listener)
 
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    listener.destroy_node()
-    rclpy.shutdown()
+  # Destroy the node explicitly
+  # (optional - otherwise it will be done automatically
+  # when the garbage collector destroys the node object)
+  listener.destroy_node()
+  rclpy.shutdown()
 
 if __name__ == '__main__':
-    main()
+  main()

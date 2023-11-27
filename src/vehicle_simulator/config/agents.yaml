@@ -15,3 +15,12 @@ robot_2:
   vehicleZ: 0.0
   terrainZ: 0.0
   vehicleYaw: 0.0
+
+robot_3:
+  vehicleHeight: 0.75
+  cameraOffsetZ: 0.0
+  vehicleX: 12.0
+  vehicleY: 0.0
+  vehicleZ: 0.0
+  terrainZ: 0.0
+  vehicleYaw: 0.0
