@@ -2,16 +2,14 @@
 import os
 
 from ament_index_python.packages import get_package_share_directory
-from launch_ros.actions import Node
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import Command, LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def spawn_robot_system(context):
   robot_name = str(LaunchConfiguration('robotName').perform(context))
-  gazebo_timeout = str(LaunchConfiguration('gazeboTimeout').perform(context))
-  use_sim_time = str(LaunchConfiguration('use_sim_time').perform(context))
 
   lidar_xacro = os.path.join(get_package_share_directory('vehicle_simulator'), 'urdf', 'lidar.urdf.xacro')
   lidar_description = Command(['xacro', ' ', lidar_xacro])
@@ -21,7 +19,7 @@ def spawn_robot_system(context):
       name='robot_state_publisher',
       output='screen',
       parameters=[{
-          'use_sim_time': use_sim_time,
+          'use_sim_time': LaunchConfiguration("use_sim_time"),
           'robot_description': lidar_description,
           'tf_prefix': robot_name,
       }],
@@ -35,7 +33,7 @@ def spawn_robot_system(context):
           '-robot_namespace',
           robot_name,
           '-timeout',
-          gazebo_timeout,
+          LaunchConfiguration("gazeboTimeout"),
           '-entity',
           robot_name + '_lidar',
           '-topic',
@@ -49,8 +47,8 @@ def spawn_robot_system(context):
       package='gazebo_ros',
       executable='spawn_entity.py',
       arguments=[
-          '-robot_namespace', robot_name, '-timeout', gazebo_timeout, '-file', robot_xacro, '-entity',
-          robot_name + '_robot'
+          '-robot_namespace', robot_name, '-timeout',
+          LaunchConfiguration("gazeboTimeout"), '-file', robot_xacro, '-entity', robot_name + '_robot'
       ],
       output='screen',
   )
@@ -60,15 +58,15 @@ def spawn_robot_system(context):
       package='gazebo_ros',
       executable='spawn_entity.py',
       arguments=[
-          '-robot_namespace', robot_name, '-timeout', gazebo_timeout, '-file', camera_xacro, '-entity',
-          robot_name + '_camera'
+          '-robot_namespace', robot_name, '-timeout',
+          LaunchConfiguration("gazeboTimeout"), '-file', camera_xacro, '-entity', robot_name + '_camera'
       ],
       output='screen'
   )
   return [spawn_lidar, spawn_robot, spawn_camera, start_lidar_state_publisher]
 
 
-def generate_launch_description():  # pylint: disable=too-many-statements
+def generate_launch_description():  # pylint: disable=too-many-statements,too-many-locals
   declare_robot_name = DeclareLaunchArgument('robotName', default_value='/', description='')
   declare_sensor_offset_x = DeclareLaunchArgument('sensorOffsetX', default_value='0.0', description='')
   declare_sensor_offset_y = DeclareLaunchArgument('sensorOffsetY', default_value='0.0', description='')
