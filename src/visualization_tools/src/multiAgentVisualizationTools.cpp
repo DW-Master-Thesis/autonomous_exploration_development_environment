@@ -84,7 +84,7 @@ int main(int argc, char** argv)
     // Log robot names
     RCLCPP_INFO(nh->get_logger(), "Robot %d: %s", i, robotName.c_str());
     auto subExploredAreasPtr = nh->create_subscription<sensor_msgs::msg::PointCloud2>(
-        robotName + "/explored_areas", 5, exploredAreaHandler);
+        "/" + robotName + "/explored_areas", 5, exploredAreaHandler);
     subExploredAreasPtrs.push_back(subExploredAreasPtr);
   }
 

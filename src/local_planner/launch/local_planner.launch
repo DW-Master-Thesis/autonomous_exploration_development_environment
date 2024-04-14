@@ -83,8 +83,4 @@
     <param name="autonomySpeed" value="$(var autonomySpeed)" />
   </node>
 
-  <node pkg="tf2_ros" exec="static_transform_publisher" name="vehicleTransPublisher" namespace="$(var robotName)" args="-$(var sensorOffsetX) -$(var sensorOffsetY) 0 0 0 0 /sensor /vehicle"/>
-
-  <node pkg="tf2_ros" exec="static_transform_publisher" name="sensorTransPublisher" namespace="$(var robotName)" args="0 0 $(var cameraOffsetZ) -1.5707963 0 -1.5707963 /sensor /camera"/>
-
 </launch>
