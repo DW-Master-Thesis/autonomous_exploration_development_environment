@@ -47,8 +47,14 @@ def spawn_robot_system(context):
       package='gazebo_ros',
       executable='spawn_entity.py',
       arguments=[
-          '-robot_namespace', robot_name, '-timeout',
-          LaunchConfiguration("gazeboTimeout"), '-file', robot_xacro, '-entity', robot_name + '_robot'
+          '-robot_namespace',
+          robot_name,
+          '-timeout',
+          LaunchConfiguration("gazeboTimeout"),
+          '-file',
+          robot_xacro,
+          '-entity',
+          robot_name + '_robot',
       ],
       output='screen',
   )
@@ -58,12 +64,18 @@ def spawn_robot_system(context):
       package='gazebo_ros',
       executable='spawn_entity.py',
       arguments=[
-          '-robot_namespace', robot_name, '-timeout',
-          LaunchConfiguration("gazeboTimeout"), '-file', camera_xacro, '-entity', robot_name + '_camera'
+          '-robot_namespace',
+          robot_name,
+          '-timeout',
+          LaunchConfiguration("gazeboTimeout"),
+          '-file',
+          camera_xacro,
+          '-entity',
+          robot_name + '_camera',
       ],
       output='screen'
   )
-  return [spawn_lidar, spawn_robot, spawn_camera, start_lidar_state_publisher]
+  return [spawn_lidar, spawn_robot, start_lidar_state_publisher]
 
 
 def generate_launch_description():  # pylint: disable=too-many-statements,too-many-locals

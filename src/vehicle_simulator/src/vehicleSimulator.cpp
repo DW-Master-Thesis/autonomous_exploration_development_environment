@@ -456,14 +456,14 @@ int main(int argc, char** argv)
     cameraState.pose.position.y = vehicleY;
     cameraState.pose.position.z = vehicleZ + cameraOffsetZ;
     request->state = cameraState;
-    auto response = client->async_send_request(request);
+    // auto response = client->async_send_request(request);
 
     robotState.pose.orientation = geoQuat;
     robotState.pose.position.x = vehicleX;
     robotState.pose.position.y = vehicleY;
     robotState.pose.position.z = vehicleZ;
     request->state = robotState;
-    response = client->async_send_request(request);
+    auto response = client->async_send_request(request);
 
     quat_tf.setRPY(terrainRoll, terrainPitch, 0);
     tf2::convert(quat_tf, geoQuat);

@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <sdf version='1.7'>
   <model name='example'>
     <link name='base_origin'>
@@ -13,6 +14,7 @@
           <izz>0.1</izz>
         </inertia>
       </inertial>
+      <gravity>0</gravity>
       <visual name='base_origin_visual'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
